@@ -27,7 +27,7 @@
 <body>
   <div id="loading">
     <div class="spinner"></div>
-    <p>Registrazione risposta in corso...</p>
+    <p>Caricamento...</p>
   </div>
   <div class="card" id="resultCard">
     <div class="card-header" id="resultHeader">
@@ -38,6 +38,7 @@
       <p class="sub">Puoi chiudere questa pagina.</p>
     </div>
   </div>
+
   <script>
     var TARGET = 'https://script.google.com/macros/s/AKfycbz9U9z6oaFYAydCVxdsELQkWs54udavW453LzBvZyupfUoQB25lr3eccbdoRJFQM0TsZg/exec';
 
@@ -58,18 +59,16 @@
     var action = getParam('action');
 
     if (action) {
+      // Risposta email: chiama Apps Script via fetch (Chrome non blocca le chiamate fetch)
       var params = window.location.search.replace('?', '') + '&format=json';
       fetch(TARGET + '?' + params)
         .then(function(r) { return r.json(); })
-        .then(function(data) {
-          showResult(data.title, data.message, data.color);
-        })
-        .catch(function() {
-          showResult('Errore', 'Impossibile contattare il server. Riprova.', '#C0392B');
-        });
+        .then(function(data) { showResult(data.title, data.message, data.color); })
+        .catch(function() { showResult('Errore', 'Impossibile contattare il server. Riprova.', '#C0392B'); });
     } else {
-      document.querySelector('.spinner').style.display = 'none';
-      document.querySelector('#loading p').textContent = 'Pagina di servizio per Cambi Turno.';
+      // Apertura app: redirect diretto
+      document.querySelector('#loading p').textContent = 'Apertura app in corso...';
+      window.location.replace(TARGET);
     }
   </script>
 </body>
