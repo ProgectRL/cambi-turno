@@ -567,7 +567,11 @@ function showApp() {
   document.getElementById('userAvatar').textContent = getInitials(currentUser.nome);
   if (currentUser.ruolo === 'coordinatore') document.getElementById('coordinatorTab').classList.remove('hidden');
   else document.getElementById('coordinatorTab').classList.add('hidden');
-  document.getElementById('dataCambio').valueAsDate = new Date();
+  var minDate = getMinCambioDate();
+  var minISO = formatDateISO(minDate);
+  var dc = document.getElementById('dataCambio');
+  dc.min = minISO;
+  dc.value = minISO;
   loadOperatori();
   var savedTab = sessionStorage.getItem('activeTab') || 'newRequest';
   sessionStorage.removeItem('activeTab');
@@ -598,11 +602,10 @@ function submitShift() {
   var ta = document.getElementById('turnoAcquisito').value;
   if (!col || !dc || !tc || !ta) { showToast('Compila tutti i campi obbligatori', 'error'); return; }
   if (col === currentUser.nome) { showToast('Non puoi scambiare con te stesso', 'error'); return; }
-  var oggi = new Date(); oggi.setHours(0, 0, 0, 0);
-  var min = new Date(oggi); min.setDate(min.getDate() + 2);
+  var minDate = getMinCambioDate(); minDate.setHours(0,0,0,0);
   var dcParts = dc.split('-');
   var dcDate = new Date(parseInt(dcParts[0]), parseInt(dcParts[1]) - 1, parseInt(dcParts[2]));
-  if (dcDate < min) { showToast('La data deve essere almeno 2 giorni da oggi', 'error'); return; }
+  if (dcDate < minDate) { showToast('Data non valida: seleziona dal ' + formatDateISO(minDate).split('-').reverse().join('/'), 'error'); return; }
   if (tc === ta) { showToast('I turni non possono essere uguali', 'error'); return; }
   var btn = document.getElementById('submitBtn');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Invio...';
@@ -616,7 +619,9 @@ function submitShift() {
         document.getElementById('turnoCeduto').value = '';
         document.getElementById('turnoAcquisito').value = '';
         document.getElementById('note').value = '';
-        document.getElementById('dataCambio').valueAsDate = new Date();
+        var newMin = getMinCambioDate(); var newMinISO = formatDateISO(newMin);
+        document.getElementById('dataCambio').min = newMinISO;
+        document.getElementById('dataCambio').value = newMinISO;
         loadMyRequests();
       } else { showToast(r.message || 'Errore', 'error'); }
     },
@@ -882,6 +887,25 @@ function logout() {
 function getInitials(n) { if (!n) return '?'; var p = n.split(' '); return p.length >= 2 ? (p[0][0] + p[1][0]).toUpperCase() : n.substring(0, 2).toUpperCase(); }
 function getFirstName(n) { if (!n) return ''; var p = n.split(' '); if (p.length >= 2) { var nm = p.slice(1).join(' '); return nm.charAt(0).toUpperCase() + nm.slice(1).toLowerCase(); } return n; }
 function esc(s) { if (s === null || s === undefined) return ''; var d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
+
+// ---- DATA MINIMA CAMBIO TURNO ----
+// Regola: data minima = martedì successivo al prossimo mercoledì
+// Se oggi è martedì → prossimo mercoledì è domani → min = martedì tra 8gg
+// Se oggi è mercoledì → prossimo mercoledì è tra 7gg → min = martedì tra 13gg
+function getMinCambioDate() {
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  var day = today.getDay(); // 0=dom,1=lun,2=mar,3=mer,4=gio,5=ven,6=sab
+  var daysToNextWed = (3 - day + 7) % 7;
+  if (daysToNextWed === 0) daysToNextWed = 7; // oggi è mercoledì → prossimo mercoledì tra 7gg
+  var nextWed = new Date(today);
+  nextWed.setDate(today.getDate() + daysToNextWed);
+  var minDate = new Date(nextWed);
+  minDate.setDate(nextWed.getDate() + 6); // martedì successivo al mercoledì = +6gg
+  return minDate;
+}
+function formatDateISO(d) {
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
 
 // ---- INSTALL BANNER ----
 function checkInstallBanner() {
