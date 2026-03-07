@@ -22,21 +22,13 @@
     .card-body p { color: #1E2D2B; font-size: 1rem; line-height: 1.6; margin-bottom: .5rem; }
     .card-body .sub { color: #6B8580; font-size: 0.85rem; }
     #loading p { color: #6B8580; font-size: .95rem; }
-    .err-msg { color: #C0392B; font-size: .88rem; display: none; margin-top: .5rem; }
-    a.fallback { color: #1A6B5A; font-weight: bold; }
   </style>
 </head>
 <body>
-
   <div id="loading">
     <div class="spinner"></div>
     <p>Registrazione risposta in corso...</p>
-    <p class="err-msg" id="errMsg">
-      Apri questo link con Edge o Safari per continuare.<br>
-      <a class="fallback" id="fallbackLink" href="#">Tocca qui per copiare il link</a>
-    </p>
   </div>
-
   <div class="card" id="resultCard">
     <div class="card-header" id="resultHeader">
       <h1 id="resultTitle"></h1>
@@ -46,7 +38,6 @@
       <p class="sub">Puoi chiudere questa pagina.</p>
     </div>
   </div>
-
   <script>
     var TARGET = 'https://script.google.com/macros/s/AKfycbz9U9z6oaFYAydCVxdsELQkWs54udavW453LzBvZyupfUoQB25lr3eccbdoRJFQM0TsZg/exec';
 
@@ -55,33 +46,27 @@
       return match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : null;
     }
 
-    var action  = getParam('action');
-    var result  = getParam('result');
-    var title   = getParam('title');
-    var message = getParam('message');
-    var color   = getParam('color');
-
-    if (result === 'done') {
+    function showResult(title, message, color) {
       document.getElementById('loading').style.display = 'none';
       var card = document.getElementById('resultCard');
       card.style.display = '';
       document.getElementById('resultHeader').style.background = color || '#1A6B5A';
       document.getElementById('resultTitle').textContent = title || 'Fatto';
       document.getElementById('resultMessage').innerHTML = message || '';
-    } else if (action) {
-      var dest = TARGET + window.location.search;
-      document.getElementById('fallbackLink').href = dest;
-      document.getElementById('fallbackLink').onclick = function(e) {
-        e.preventDefault();
-        if (navigator.clipboard) navigator.clipboard.writeText(dest);
-        alert('Link copiato! Incollalo nella barra di Edge o Safari.');
-      };
-      try { window.location.replace(dest); }
-      catch(e) { document.getElementById('errMsg').style.display = ''; }
-      setTimeout(function() {
-        document.getElementById('errMsg').style.display = '';
-        document.querySelector('.spinner').style.display = 'none';
-      }, 3000);
+    }
+
+    var action = getParam('action');
+
+    if (action) {
+      var params = window.location.search.replace('?', '') + '&format=json';
+      fetch(TARGET + '?' + params)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          showResult(data.title, data.message, data.color);
+        })
+        .catch(function() {
+          showResult('Errore', 'Impossibile contattare il server. Riprova.', '#C0392B');
+        });
     } else {
       document.querySelector('.spinner').style.display = 'none';
       document.querySelector('#loading p').textContent = 'Pagina di servizio per Cambi Turno.';
