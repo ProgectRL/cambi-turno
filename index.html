@@ -68,14 +68,9 @@
           document.getElementById('resultTitle').textContent = 'Errore';
           document.getElementById('resultMessage').textContent = 'Impossibile contattare il server.';
         });
-    } else {
-      var frame = document.getElementById('app-frame');
-      frame.src = TARGET;
-      frame.onload = function() {
-        document.getElementById('loading').style.display = 'none';
-        frame.style.display = 'block';
-      };
-    }
+} else {
+  window.location.replace(TARGET);
+}
   </script>
 </body>
 </html>
