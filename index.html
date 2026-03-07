@@ -1,46 +1,43 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cambi Turno — Risposta in corso...</title>
-  <style>
-    body { font-family: Arial, sans-serif; display: flex; align-items: center;
-      justify-content: center; min-height: 100vh; margin: 0;
-      background: #F0F4F3; flex-direction: column; gap: 1rem; text-align: center; padding: 1rem; }
-    .spinner { width: 40px; height: 40px; border: 3px solid #D1DDD9;
-      border-top-color: #1A6B5A; border-radius: 50%; animation: spin .7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    p { color: #6B8580; font-size: .95rem; }
-    .err { color: #C0392B; display: none; }
-  </style>
-</head>
-<body>
-  <div class="spinner"></div>
-  <p>Registrazione risposta in corso...</p>
-  <p class="err" id="err">
-    Apri questo link con Edge o Safari per continuare.<br>
-    <a id="fallbackLink" href="#" style="color:#1A6B5A;font-weight:bold;">Tocca qui per copiare il link</a>
-  </p>
-  <script>
-    var TARGET = 'https://script.google.com/macros/s/AKfycbz9U9z6oaFYAydCVxdsELQkWs54udavW453LzBvZyupfUoQB25lr3eccbdoRJFQM0TsZg/exec';
-    var params = window.location.search;
-    if (!params) { document.getElementById('err').style.display = ''; }
-    else {
-      var dest = TARGET + params;
-      document.getElementById('fallbackLink').href = dest;
-      document.getElementById('fallbackLink').onclick = function(e) {
-        e.preventDefault();
-        navigator.clipboard && navigator.clipboard.writeText(dest);
-        alert('Link copiato! Incollalo nella barra di Edge o Safari.');
-      };
-      try { window.location.replace(dest); }
-      catch(e) { document.getElementById('err').style.display = ''; }
-      setTimeout(function() {
-        document.getElementById('err').style.display = '';
-        document.querySelector('.spinner').style.display = 'none';
-      }, 3000);
+function handleEmailAction(e) {
+  var action=e.parameter.action, token=e.parameter.token, id=e.parameter.id;
+  var sheet=getSheet('CambiTurno'), data=sheet.getDataRange().getValues();
+  var redirectBase = 'https://lodovicorossetti.github.io/cambi-turno/';
+  var title, message, color;
+
+  for (var i=1; i<data.length; i++) {
+    if (String(data[i][0])===String(id) && String(data[i][10])===String(token)) {
+      if (data[i][9]!=='In attesa') {
+        title   = 'Già gestita';
+        message = 'Stato attuale: '+data[i][9];
+        color   = '#D4A853';
+        break;
+      }
+      var ns = action==='approve' ? 'Accordato con collega' : 'Rifiutato dal collega';
+      sheet.getRange(i+1,10).setValue(ns);
+      sheet.getRange(i+1,12).setValue(new Date().toLocaleString('it-IT',{timeZone:'Europe/Rome'}));
+      sendResponseEmail(data[i], ns);
+      var em = ns==='Accordato con collega'?'✅':'❌';
+      var lb = ns==='Accordato con collega'?'accordato':'rifiutato';
+      title   = em+' '+ns;
+      message = 'Hai '+lb+' il cambio turno di '+data[i][2]+' per il '+formatDateValue(data[i][5])+'.';
+      color   = ns==='Accordato con collega'?'#1A6B5A':'#C0392B';
+      break;
     }
-  </script>
-</body>
-</html>
+  }
+
+  if (!title) {
+    title   = 'Errore';
+    message = 'Richiesta non trovata o link non valido.';
+    color   = '#C0392B';
+  }
+
+  var resultUrl = redirectBase
+    +'?result=done'
+    +'&title='+encodeURIComponent(title)
+    +'&message='+encodeURIComponent(message)
+    +'&color='+encodeURIComponent(color);
+
+  return HtmlService.createHtmlOutput(
+    '<script>window.location.replace("'+resultUrl+'")<\/script>'
+  ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
