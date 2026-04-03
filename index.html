@@ -716,6 +716,9 @@ function buildRequestCard(r, type) {
     + '<div class="request-detail"><span class="label">Turno ceduto</span><span class="value">' + esc(r.turnoCeduto) + '</span></div>'
     + '<div class="request-detail"><span class="label">Turno acquisito</span><span class="value">' + esc(r.turnoAcquisito) + '</span></div>'
     + (r.note ? '<div class="request-detail" style="grid-column:1/-1"><span class="label">Note</span><span class="value">' + esc(r.note) + '</span></div>' : '')
+    + (r.noteCoordinatore ? '<div class="request-detail" style="grid-column:1/-1"><span class="label">⚖️ Nota coordinatore</span><span class="value">' + esc(r.noteCoordinatore) + '</span></div>' : '')
+    + '<div class="request-detail"><span class="label">📧 Email</span><span class="value">' + (String(r.emailInviata).toUpperCase() === 'SI' ? '<span style="color:var(--success)">Inviata</span>' : '<span style="color:var(--danger)">Non inviata</span>') + '</span></div>'
+    + '<div class="request-detail"><span class="label">⏰ Reminder</span><span class="value">' + (String(r.reminder).toUpperCase() === 'SI' ? 'Inviato' : 'Non necessario') + '</span></div>'
     + '</div>' + actions + '</div>';
 }
 
